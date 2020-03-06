@@ -1,26 +1,22 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import "./App.css";
+import { IonPhaser } from "@ion-phaser/react";
+import { gameSceneConfig } from "./scenes/gameScene";
+import socketIOClient from "socket.io-client";
+class App extends React.Component {
+  state = {
+    initialize: true,
+    game: gameSceneConfig,
+    endpoint: "localhost: 8080"
+  };
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+  render() {
+    return (
+      <div className="App">
+        <IonPhaser game={this.state.game} initialize={this.state.initialize} />
+      </div>
+    );
+  }
 }
 
 export default App;
