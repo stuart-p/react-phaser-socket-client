@@ -36,14 +36,10 @@ function create() {
   player.setCollideWorldBounds(true);
   cursors = this.input.keyboard.createCursorKeys();
   socket.emit("player connected", { id: socket.id, x: 100, y: 450 });
-  socket.emit("player connected", "asfs");
 
   socket.on("player connected update", data => {
     let players_found = {};
     data.forEach(player => {
-      console.log("a", player);
-      console.log("b", player.id);
-      console.log("c", socket.id);
       if (players[player.id] === undefined && player.id !== socket.id) {
         let createPlayer = (x, y, image) => {
           let sprite = this.physics.add.sprite(x, y, image);
@@ -54,7 +50,7 @@ function create() {
       }
       players_found[player.id] = true;
 
-      if (player.id != socket.id) {
+      if (player.id !== socket.id) {
         players[player.id].x = player.x;
         players[player.id].y = player.y;
       }
@@ -88,27 +84,24 @@ function create() {
 function update() {
   if (cursors.left.isDown) {
     player.setVelocityX(-160);
-    socket.emit("playerMovement", { x: -1, y: 0 });
+    socket.emit("playerMovement", { id: socket.id, x: player.x, y: player.y });
     player.anims.play("left", true);
   } else if (cursors.right.isDown) {
     player.setVelocityX(160);
-    socket.emit("playerMovement", { x: 1, y: 0 });
+    socket.emit("playerMovement", { id: socket.id, x: player.x, y: player.y });
     player.anims.play("right", true);
   } else if (cursors.up.isDown) {
     player.setVelocityY(-160);
-    socket.emit("playerMovement", { x: 0, y: -1 });
+    socket.emit("playerMovement", { id: socket.id, x: player.x, y: player.y });
     player.anims.play("up", true);
   } else if (cursors.down.isDown) {
     player.setVelocityY(160);
-    socket.emit("playerMovement", { x: 0, y: 1 });
+    socket.emit("playerMovement", { id: socket.id, x: player.x, y: player.y });
     player.anims.play("right", true);
   } else {
     player.setVelocityX(0);
     player.setVelocityY(0);
     player.anims.play("turn");
-  }
-  if (player.body.position !== currentPos) {
-    socket.emit("playerPosUpdate", player.body.position);
   }
 }
 // else if (cursors.a.isDown) {
