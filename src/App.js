@@ -7,7 +7,8 @@ class App extends React.Component {
   state = {
     initialize: true,
     game: gameSceneConfig,
-    endpoint: "localhost: 8080"
+    endpoint: "localhost:8080",
+    socket: null
   };
 
   render() {

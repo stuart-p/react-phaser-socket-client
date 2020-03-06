@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import socketIOClient from "socket.io-client";
 
 let cursors;
 let player;
@@ -7,10 +8,10 @@ let score = 0;
 let scoreText;
 let bombs;
 let gameOver = false;
+let socket = null;
+let currentPos;
 
 function preload() {
-  console.log("preloaded..");
-  console.log();
   this.load.image("sky", "../assets/sky.png");
   this.load.image("ground", "../assets/platform.png");
   this.load.image("star", "../assets/star.png");
@@ -101,13 +102,20 @@ function create() {
   bombs = this.physics.add.group();
   this.physics.add.collider(bombs, platforms);
   this.physics.add.collider(player, bombs, hitBomb, null, this);
+
+  socket = socketIOClient("localhost:8080");
+  socket.on("playerArrayUpdate", data => {
+    console.log(data);
+  });
 }
 function update() {
   if (cursors.left.isDown) {
     player.setVelocityX(-160);
+    socket.emit("playerMovement", { x: -1, y: 0 });
     player.anims.play("left", true);
   } else if (cursors.right.isDown) {
     player.setVelocityX(160);
+    socket.emit("playerMovement", { x: 1, y: 0 });
     player.anims.play("right", true);
   } else {
     player.setVelocityX(0);
@@ -116,6 +124,12 @@ function update() {
 
   if (cursors.up.isDown && player.body.touching.down) {
     player.setVelocityY(-900);
+    socket.emit("playerMovement", { x: 0, y: 1 });
+  }
+
+  //TEMP ONLY - SERVER WILL EVENTUALLY DICTATE POSITION
+  if (player.body.position !== currentPos) {
+    socket.emit("playerPosUpdate", player.body.position);
   }
 }
 
@@ -127,7 +141,8 @@ const gameSceneConfig = {
     default: "arcade",
     arcade: {
       gravity: { y: 400 },
-      debug: false
+      debug: false,
+      fps: 30
     }
   },
   scene: { preload: preload, create: create, update: update }
