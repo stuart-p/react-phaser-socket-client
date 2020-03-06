@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import socketIOClient from "socket.io-client";
 
+let playerNum;
 let cursors;
 let player;
 let stars;
@@ -11,102 +12,78 @@ let gameOver = false;
 let socket = null;
 let currentPos;
 
+let players = [];
+
+socket = socketIOClient("localhost:8080");
+socket.on("playerArrayUpdate", data => {
+  players = data;
+});
+socket.on("connection verified", playerNumber => {
+  playerNum = playerNumber;
+});
+
 function preload() {
+  socket.emit("playerJoined", "hi");
   this.load.image("sky", "../assets/sky.png");
-  this.load.image("ground", "../assets/platform.png");
-  this.load.image("star", "../assets/star.png");
-  this.load.image("bomb", "../assets/bomb.png");
   this.load.spritesheet("dude", "../assets/dude.png", {
     frameWidth: 32,
     frameHeight: 48
   });
 }
-function collectStar(player, star) {
-  star.disableBody(true, true);
-  score += 10;
-  scoreText.setText("Score: " + score);
-
-  if (stars.countActive(true) === 0) {
-    stars.children.iterate(function(child) {
-      child.enableBody(true, child.x, 0, true, true);
-    });
-    const x =
-      player.x < 400
-        ? Phaser.Math.Between(400, 800)
-        : Phaser.Math.Between(0, 400);
-    const bomb = bombs.create(x, 16, "bomb");
-    bomb.setBounce(1);
-    bomb.setCollideWorldBounds(true);
-    bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
-  }
-}
-
-function hitBomb(player, bomb) {
-  // this.physics.pause;
-  player.setTint(0xff0000);
-  player.anims.play("turn");
-  gameOver = true;
-}
 
 function create() {
-  this.load.image("sky", "../src/assets/sky.png");
-  this.add.image(0, 0, "sky").setOrigin(0, 0);
-  const platforms = this.physics.add.staticGroup();
-  platforms
-    .create(400, 568, "ground")
-    .setScale(2)
-    .refreshBody();
-  platforms.create(600, 400, "ground");
-  platforms.create(50, 250, "ground");
-  platforms.create(750, 220, "ground");
-
   player = this.physics.add.sprite(100, 450, "dude");
-  player.body.setGravityY(1000);
-  player.setBounce(0.2);
   player.setCollideWorldBounds(true);
-  this.physics.add.collider(player, platforms);
   cursors = this.input.keyboard.createCursorKeys();
-  stars = this.physics.add.group({
-    key: "star",
-    repeat: 11,
-    setXY: { x: 12, y: 0, stepX: 70 }
-  });
-  stars.children.iterate(function(child) {
-    child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
-  });
-  this.physics.add.collider(stars, platforms);
-  this.physics.add.overlap(player, stars, collectStar, null, this);
+  socket.emit("player connected", { id: socket.id, x: 100, y: 450 });
+  socket.emit("player connected", "asfs");
 
-  this.anims.create({
-    key: "left",
-    frames: this.anims.generateFrameNumbers("dude", { start: 0, end: 3 }),
-    frameRate: 10,
-    repeat: -1
-  });
-  this.anims.create({
-    key: "turn",
-    frames: [{ key: "dude", frame: 4 }],
-    frameRate: 20
-  });
+  socket.on("player connected update", data => {
+    let players_found = {};
+    data.forEach(player => {
+      console.log("a", player);
+      console.log("b", player.id);
+      console.log("c", socket.id);
+      if (players[player.id] === undefined && player.id !== socket.id) {
+        let createPlayer = (x, y, image) => {
+          let sprite = this.physics.add.sprite(x, y, image);
+          return sprite;
+        };
+        let newPlayer = createPlayer(player.x, player.y, "dude");
+        players[player.id] = newPlayer;
+      }
+      players_found[player.id] = true;
 
-  this.anims.create({
-    key: "right",
-    frames: this.anims.generateFrameNumbers("dude", { start: 5, end: 8 }),
-    frameRate: 10,
-    repeat: -1
+      if (player.id != socket.id) {
+        players[player.id].x = player.x;
+        players[player.id].y = player.y;
+      }
+      players.forEach(player => {
+        if (!players_found[player.id]) {
+          players[player.id].destroy();
+          delete players[player.id];
+        }
+      });
+    });
   });
-  scoreText = this.add.text(16, 16, "score: 0", {
-    fontSize: "32px",
-    fill: "#000"
-  });
-  bombs = this.physics.add.group();
-  this.physics.add.collider(bombs, platforms);
-  this.physics.add.collider(player, bombs, hitBomb, null, this);
+  //   this.anims.create({
+  //     key: "left",
+  //     frames: this.anims.generateFrameNumbers("dude", { start: 0, end: 3 }),
+  //     frameRate: 10,
+  //     repeat: -1
+  //   });
+  //   this.anims.create({
+  //     key: "turn",
+  //     frames: [{ key: "dude", frame: 4 }],
+  //     frameRate: 20
+  //   });
 
-  socket = socketIOClient("localhost:8080");
-  socket.on("playerArrayUpdate", data => {
-    console.log(data);
-  });
+  //   this.anims.create({
+  //     key: "right",
+  //     frames: this.anims.generateFrameNumbers("dude", { start: 5, end: 8 }),
+  //     frameRate: 10,
+  //     repeat: -1
+  //   });
 }
 function update() {
   if (cursors.left.isDown) {
@@ -117,30 +94,50 @@ function update() {
     player.setVelocityX(160);
     socket.emit("playerMovement", { x: 1, y: 0 });
     player.anims.play("right", true);
+  } else if (cursors.up.isDown) {
+    player.setVelocityY(-160);
+    socket.emit("playerMovement", { x: 0, y: -1 });
+    player.anims.play("up", true);
+  } else if (cursors.down.isDown) {
+    player.setVelocityY(160);
+    socket.emit("playerMovement", { x: 0, y: 1 });
+    player.anims.play("right", true);
   } else {
     player.setVelocityX(0);
+    player.setVelocityY(0);
     player.anims.play("turn");
   }
-
-  if (cursors.up.isDown && player.body.touching.down) {
-    player.setVelocityY(-900);
-    socket.emit("playerMovement", { x: 0, y: 1 });
-  }
-
-  //TEMP ONLY - SERVER WILL EVENTUALLY DICTATE POSITION
   if (player.body.position !== currentPos) {
     socket.emit("playerPosUpdate", player.body.position);
   }
 }
+// else if (cursors.a.isDown) {
+//   player.setVelocityX(-160);
+//   socket.emit("playerMovement", { x: -1, y: 0 });
+//   player.anims.play("left", true);
+// } else if (cursors.d.isDown) {
+//   player.setVelocityX(160);
+//   socket.emit("playerMovement", { x: 1, y: 0 });
+//   player.anims.play("right", true);
+// } else if (cursors.w.isDown) {
+//   player.setVelocityY(-160);
+//   socket.emit("playerMovement", { x: 0, y: -1 });
+//   player.anims.play("up", true);
+// } else if (cursors.s.isDown) {
+//   player.setVelocityY(160);
+//   socket.emit("playerMovement", { x: 0, y: 1 });
+//   player.anims.play("right", true);
+// }
+
+//TEMP ONLY - SERVER WILL EVENTUALLY DICTATE POSITION
 
 const gameSceneConfig = {
-  width: "100%",
-  height: "100%",
+  width: "90%",
+  height: "3000",
   type: Phaser.AUTO,
   physics: {
     default: "arcade",
     arcade: {
-      gravity: { y: 400 },
       debug: false,
       fps: 30
     }
