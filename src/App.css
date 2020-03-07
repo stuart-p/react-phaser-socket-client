@@ -1,4 +1,9 @@
 /* GENERAL */
+
+* {
+  background-color: rgb(210, 38, 245);
+  color: red;
+}
 h1 {
   font-size: 30px;
 }

@@ -1,17 +1,10 @@
 import Phaser from "phaser";
 import socketIOClient from "socket.io-client";
 
-let playerNum;
 let cursors;
 let player;
-let stars;
-let score = 0;
-let scoreText;
-let bombs;
-let gameOver = false;
 let socket = null;
-let currentPos;
-
+let playerNum;
 let players = [];
 
 socket = socketIOClient("localhost:8080");

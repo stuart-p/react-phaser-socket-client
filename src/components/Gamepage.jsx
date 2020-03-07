@@ -2,7 +2,6 @@ import React, { Component } from "react";
 import "../App.css";
 import { IonPhaser } from "@ion-phaser/react";
 import { gameSceneConfig } from "../scenes/gameScene";
-import socketIOClient from "socket.io-client";
 import Header from "./Header";
 import Footer from "./Footer";
 
