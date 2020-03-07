@@ -22,14 +22,17 @@ function preload() {
     frameWidth: 32,
     frameHeight: 48
   });
+  console.log(this);
 }
 
 function create() {
+  this.add.image(0, 0, "sky").setOrigin(0, 0);
   player = this.physics.add.sprite(100, 450, "dude");
   player.setCollideWorldBounds(true);
   cursors = this.input.keyboard.createCursorKeys();
   socket.emit("player connected", { id: socket.id, x: 100, y: 450 });
-
+  this.cameras.main.setDeadzone(50, 50);
+  this.cameras.main.startFollow(player, true, 0.8, 0.8);
   socket.on("player connected update", data => {
     let players_found = {};
     data.forEach(player => {
@@ -55,24 +58,24 @@ function create() {
       });
     });
   });
-  //   this.anims.create({
-  //     key: "left",
-  //     frames: this.anims.generateFrameNumbers("dude", { start: 0, end: 3 }),
-  //     frameRate: 10,
-  //     repeat: -1
-  //   });
-  //   this.anims.create({
-  //     key: "turn",
-  //     frames: [{ key: "dude", frame: 4 }],
-  //     frameRate: 20
-  //   });
+  this.anims.create({
+    key: "left",
+    frames: this.anims.generateFrameNumbers("dude", { start: 0, end: 3 }),
+    frameRate: 10,
+    repeat: -1
+  });
+  this.anims.create({
+    key: "turn",
+    frames: [{ key: "dude", frame: 4 }],
+    frameRate: 20
+  });
 
-  //   this.anims.create({
-  //     key: "right",
-  //     frames: this.anims.generateFrameNumbers("dude", { start: 5, end: 8 }),
-  //     frameRate: 10,
-  //     repeat: -1
-  //   });
+  this.anims.create({
+    key: "right",
+    frames: this.anims.generateFrameNumbers("dude", { start: 5, end: 8 }),
+    frameRate: 10,
+    repeat: -1
+  });
 }
 function update() {
   if (cursors.left.isDown) {
@@ -119,7 +122,7 @@ function update() {
 
 const gameSceneConfig = {
   width: "90%",
-  height: "3000",
+  height: "90%",
   type: Phaser.AUTO,
   physics: {
     default: "arcade",
